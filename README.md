@@ -44,3 +44,62 @@ Show Tabular type of data easily using angularjs factory, directive, bootstrap c
 </div>
 ```
 
+## Usage
+```javascript
+app.controller("ListViewController", ['$scope', '$resource', '$http', 'GridView', function($scope, $resource, $http, GridView){
+
+    //initialize a local variable with GridView Service
+    $scope.Grid = GridView.init('url/to/grid', null, $scope.getGridMsgs());
+
+
+    $scope.confirmEnableDisable = function(row) {
+        $scope.showModal('.ajax-modal', function(){
+            httpAjax($http, 'POST', row.url, 'id=' + row.id, function(data, status, headers, config) {
+                $scope.Grid.showMessage(data);
+                $scope.hideModal();
+                $scope.Grid.refresh();
+            });
+        });
+    };
+}]);
+
+app.controller("CreateModifyController", ['$scope', '$location', 'DTO', function($scope, $location, DTO) {
+
+
+    $scope.submitForm = function(angObj) {
+        if(angObj.$valid) {
+            DTO.save('#createForm', 'url/to/save')
+                .success(function(data, status, headers, config) {
+                    $scope.setGridMsgs(data, true);	
+                    $location.path("/to/list");
+                })
+                .error(function(data, status, headers, config) {
+                    $scope.setGridMsgs(data, true);
+                    $location.path("/to/list");
+                });
+        }
+    }
+}]);
+```
+
+## Add variable/methods to parent controller
+```javascript
+//new global msg object to be used with new Grid component
+var GridMsgs = null;
+$scope.setGridMsgs = function(msg, force) {
+	if(msg) {
+		msg.msg = msg.success ? msg.success : msg.error;
+		msg.force = force;
+	}
+	GridMsgs = msg;
+}
+$scope.getGridMsgs = function() {
+	return GridMsgs;
+}
+
+$scope.$on('$routeChangeSuccess', function(evt, absNewUrl, absOldUrl) {
+	var msg = $scope.getGridMsgs();
+	if(msg && !msg.force)
+		$scope.setGridMsgs(null);
+});
+```
